@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: webbiensoquang
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: FLASK_SECRET_KEY
+        sync: false
+      - key: FIREBASE_CREDENTIALS
+        sync: false
+        value: ""
+

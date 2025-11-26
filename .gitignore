@@ -1,0 +1,18 @@
+# --- File Bảo mật (TUYỆT ĐỐI KHÔNG XÓA DÒNG NÀY) ---
+firebase_key.json
+.env
+
+# --- Môi trường ảo và Cache ---
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# --- Dữ liệu tạm thời ---
+cropped_plates/
+static/results/
+.DS_Store
+
+# --- Các file IDE ---
+.vscode/
+.idea/

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - Nhận diện Biển số</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-form" id="login-form">
+            <h2>Đăng nhập Hệ thống</h2>
+            <input type="text" id="login-user" placeholder="Tên đăng nhập" required>
+            <input type="password" id="login-pass" placeholder="Mật khẩu" required>
+            <button id="btn-login">Đăng nhập</button>
+            <p>Chưa có tài khoản? <a href="#" id="show-register">Đăng ký ngay</a></p>
+            <p id="login-msg" class="message"></p>
+        </div>
+
+        <div class="auth-form" id="register-form" style="display:none;">
+            <h2>Đăng ký Tài khoản</h2>
+            <input type="text" id="reg-user" placeholder="Tên đăng nhập (*)" required>
+            <input type="password" id="reg-pass" placeholder="Mật khẩu (*)" required>
+            <input type="text" id="reg-name" placeholder="Họ và tên (*)" required>
+            <input type="text" id="reg-phone" placeholder="Số điện thoại">
+            <input type="text" id="reg-plate" placeholder="Biển số xe (*)" required
+                oninput="this.value = this.value.toUpperCase()"
+                       style="margin-bottom: 5px;">
+                
+                <p style="font-size: 0.85em; color: #666; margin: 0 0 15px 5px; font-style: italic;">
+                    * Viết liền, không "-", không ".". (VD: 59A12345)
+                </p>
+            <input type="text" id="reg-vehicle" placeholder="Thông tin xe (VD: Honda Vario)">
+            <button id="btn-register">Đăng ký</button>
+            <p>Đã có tài khoản? <a href="#" id="show-login">Quay lại đăng nhập</a></p>
+            <p id="reg-msg" class="message"></p>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+</body>
+</html>
