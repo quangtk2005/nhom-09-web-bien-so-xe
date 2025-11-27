@@ -6,26 +6,61 @@ import os
 import unicodedata
 import gc
 import torch
+import requests
+from pathlib import Path
 
-# --- CẤU HÌNH AI ---
 MODEL_PATH = 'models/best.pt'
+MODEL_URL = os.getenv('MODEL_URL', '')
 CONFIDENCE_THRESHOLD = 0.25
 EXPECTED_CLASS_ID = 0
 OCR_ALLOWLIST = '0123456789ABCDEFGHKLMNPRSTUVXYZ-.'
 CROP_SAVE_DIR = 'cropped_plates'
 os.makedirs(CROP_SAVE_DIR, exist_ok=True)
+os.makedirs('models', exist_ok=True)
 
 # --- BIẾN TOÀN CỤC CHO AI ---
 model_yolo = None
 reader_ocr = None
 class_name_display = ""
 
-# --- HÀM TẢI TÀI NGUYÊN ---
-
+def download_model(url, save_path, status_callback):
+    try:
+        status_callback(f"Đang tải model từ {url}...")
+        response = requests.get(url, stream=True, timeout=300)
+        response.raise_for_status()
+        
+        total_size = int(response.headers.get('content-length', 0))
+        downloaded = 0
+        
+        Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(save_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    if total_size > 0:
+                        progress = (downloaded / total_size) * 100
+                        if int(progress) % 10 == 0:
+                            status_callback(f"Đã tải: {int(progress)}%")
+        
+        status_callback("Tải model thành công!")
+        return True
+    except Exception as e:
+        status_callback(f"Lỗi tải model: {str(e)}")
+        return False
 
 def load_resources(status_callback):
     global model_yolo, reader_ocr, class_name_display
     try:
+        if not os.path.exists(MODEL_PATH) and MODEL_URL:
+            if not download_model(MODEL_URL, MODEL_PATH, status_callback):
+                return False
+        
+        if not os.path.exists(MODEL_PATH):
+            status_callback("Lỗi: Không tìm thấy model file")
+            return False
+        
         status_callback("Đang tải model YOLO...")
         model_yolo = YOLO(MODEL_PATH)
         model_yolo.fuse()
