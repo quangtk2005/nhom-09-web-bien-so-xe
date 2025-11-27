@@ -16,9 +16,7 @@ ENV/
 *~
 .git/
 .gitignore
-static/results/*.jpg
-static/results/*.png
-static/results/*.jpeg
+static/results/
 cropped_plates/
 *.pt.bak
 *.pt~
@@ -33,7 +31,18 @@ build/
 firebase_key.json
 .renderignore
 render.yaml
-models/*.pt
-models/*.onnx
-models/*.pth
+models/
+*.pt
+*.onnx
+*.pth
+*.rar
+*.zip
+*.tar.gz
+*.7z
+node_modules/
+.npm/
+.yarn/
+*.map
+*.min.js
+*.min.css
 
