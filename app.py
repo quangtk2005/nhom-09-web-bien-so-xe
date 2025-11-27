@@ -6,7 +6,12 @@ import os
 import cv2
 import numpy as np
 import uuid
+import gc
 from dotenv import load_dotenv
+
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+np.seterr(all='ignore')
 
 from ai_processing import load_resources, process_frame_for_web
 import db_utils
@@ -110,37 +115,42 @@ def route_upload():
     file = request.files['file']
 
     try:
-        # 1. Đọc ảnh từ stream
         img_bytes = file.read()
+        if len(img_bytes) > 10 * 1024 * 1024:
+            return jsonify({'success': False, 'message': 'File quá lớn. Tối đa 10MB.'}), 400
+
         nparr = np.frombuffer(img_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if img is None:
             return jsonify({'success': False, 'message': 'File không phải là ảnh.'}), 400
 
-        # 2. Xử lý ảnh
-        # Truyền hàm 'query_owner_info' vào làm callback
+        del img_bytes, nparr
+
         img_result, message, details = process_frame_for_web(
             img,
             db_utils.query_owner_info
         )
 
-        # 3. Lưu ảnh kết quả (Giữ nguyên)
         filename = f"{uuid.uuid4()}.jpg"
         save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        cv2.imwrite(save_path, img_result)
+        cv2.imwrite(save_path, img_result, [cv2.IMWRITE_JPEG_QUALITY, 85])
+
+        del img, img_result
 
         # 4. Trả về JSON (Thêm field 'details')
         result_url = url_for('static', filename=f'results/{filename}')
 
+        gc.collect()
         return jsonify({
             'success': True,
             'message': message,
             'result_url': result_url,
-            'details': details  # <--- Gửi danh sách chi tiết về Client
+            'details': details
         })
     except Exception as e:
         print(f"Error: {e}")
+        gc.collect()
         return jsonify({'success': False, 'message': f'Lỗi Server: {e}'}), 500
 
 

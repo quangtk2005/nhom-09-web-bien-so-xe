@@ -4,6 +4,8 @@ from ultralytics import YOLO
 import numpy as np
 import os
 import unicodedata
+import gc
+import torch
 
 # --- CẤU HÌNH AI ---
 MODEL_PATH = 'models/best.pt'
@@ -26,6 +28,7 @@ def load_resources(status_callback):
     try:
         status_callback("Đang tải model YOLO...")
         model_yolo = YOLO(MODEL_PATH)
+        model_yolo.fuse()
 
         if EXPECTED_CLASS_ID in model_yolo.names:
             class_name_display = model_yolo.names[EXPECTED_CLASS_ID]
@@ -33,7 +36,7 @@ def load_resources(status_callback):
             class_name_display = "LicensePlate"
 
         status_callback("Đang khởi tạo EasyOCR...")
-        reader_ocr = easyocr.Reader(['en'], gpu=False)
+        reader_ocr = easyocr.Reader(['en'], gpu=False, verbose=False, quantize=True, cudnn_benchmark=False)
 
         status_callback("Hệ thống AI sẵn sàng!")
         return True
@@ -78,7 +81,10 @@ def perform_ocr(plate_img):
             thresholded_img,
             detail=0,
             allowlist=OCR_ALLOWLIST,
-            paragraph=False
+            paragraph=False,
+            width_ths=0.7,
+            height_ths=0.7,
+            batch_size=1
         )
 
         if not results:
@@ -103,7 +109,14 @@ def process_frame_for_web(frame, query_callback):
     if model_yolo is None:
         return frame, "Model chưa tải", []
 
-    results = model_yolo(frame, verbose=False)[0]
+    max_size = 1280
+    h, w = frame.shape[:2]
+    if max(h, w) > max_size:
+        scale = max_size / max(h, w)
+        new_w, new_h = int(w * scale), int(h * scale)
+        frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+    results = model_yolo(frame, verbose=False, imgsz=640)[0]
 
     img_result = frame.copy()
     final_message = "Không phát hiện biển số."
@@ -148,7 +161,12 @@ def process_frame_for_web(frame, query_callback):
     if detection_count > 0:
         final_message = f"Phát hiện {detection_count} biển số."
 
-    # Trả về thêm detected_info
+    try:
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except:
+        pass
+    gc.collect()
     return img_result, final_message, detected_info
 
 # --- HÀM VẼ KẾT QUẢ (Đơn giản hóa, dùng cv2.putText) ---
